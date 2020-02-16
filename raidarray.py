@@ -10,7 +10,7 @@ class RaidArray(object):
     """
     def __init__(self, controller_id, array_id):
         self.level = self.status = self.unique_id = self.pd_list = \
-            self.access = self.cache = self.size = None
+            self.access = self.cache = self.size = self.blk_dev_name = None
         self.controller_id = controller_id
         self.id = array_id
         self.pd_list = []
@@ -116,7 +116,25 @@ class RaidArrayAdaptec(RaidArray):
                     self.unique_id = line.split()[-1]
 
     def get_blk_dev_name(self):
-        return None
+        try:
+            blkdev_list = \
+                subprocess.check_output('lsblk -dn -o NAME', shell=True,
+                                        universal_newlines=True).splitlines()
+        except subprocess.CalledProcessError:
+            return None
+        for dev in blkdev_list:
+            try:
+                dev_info = \
+                    subprocess.check_output(
+                        'smartctl -i /dev/'+dev,
+                        shell=True, universal_newlines=True).splitlines()
+            except subprocess.CalledProcessError:
+                self.blk_dev_name = None
+            else:
+                for line in dev_info:
+                    if line.lower().startswith('serial number') and \
+                            line.split()[-1] == self.unique_id:
+                        self.blk_dev_name = dev
 
     def get_pd_list(self):
         return None
