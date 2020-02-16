@@ -1,6 +1,8 @@
 # disk_info
 Module for getting block devices information 
 
+## WARNING: work in progress ##
+
 This is a python module for retriving information on linux blk devices. It is able to detec MegaRaid controllers/arrays with underlying physical devices.
 
 What is implemented
