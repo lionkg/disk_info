@@ -33,7 +33,7 @@ for tool in required_tools:
 # Get the full list of physical dirves with parameters
 try:
     blkdev_list = \
-        subprocess.check_output('lsblk', shell=True,
+        subprocess.check_output('lsblk -dn -o NAME', shell=True,
                                 universal_newlines=True).splitlines()
 except subprocess.CalledProcessError:
     print("CRITICAL: could not get list of physical drives")
