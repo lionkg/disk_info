@@ -59,7 +59,7 @@ class BlkDev(object):
                 elif 'solid state device' in line.lower():
                     self.type = 'ssd'
                 elif line.lower().startswith('serial number:'):
-                    self.dev_sn = line.split()[-1].lower()
+                    self.sn = line.split()[-1].lower()
                 elif line.lower().startswith('logical unit id:'):
                     self.dev_unit_id = \
                         line.split()[-1].lower().replace('0x', '', 1)
