@@ -4,8 +4,7 @@ import subprocess
 import distutils.spawn
 
 from diskdrive import BlkDev
-from raidcontrollers import RaidControllersMegaRaid
-from raidarray import RaidArray
+from raidcontrollers import RaidControllersMegaRaid, RaidControllersAdaptec
 
 
 # method to check for required uttilities
@@ -13,6 +12,7 @@ def check4tool(name):
     if distutils.spawn.find_executable(name) is None:
         print('CRITICAL: {} could not be found'.format(name))
         exit(1)
+
 
 # Check for lspci
 check4tool('lspci')
@@ -45,6 +45,13 @@ for blk_device in blkdev_list:
         drive = BlkDev(blk_device.split()[0])
         if drive.vendor == 'MegaRaid':
             check4tool('storcli64')
-            megaraid = RaidControllersMegaRaid()
+            try:
+                megaraid_raid_controllers
+            except NameError:
+                megaraid_raid_controllers = RaidControllersMegaRaid()
         elif drive.vendor == 'Adaptec':
             check4tool('arcconf')
+            try:
+                adaptec_raid_controllers
+            except NameError:
+                adaptec_raid_controllers = RaidControllersAdaptec()
