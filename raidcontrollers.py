@@ -107,24 +107,5 @@ class RaidControllersMegaRaid(RaidControllers):
 
 '''
 class RaidControllersAdaptec(RaidControllers):
-    """
-    A class for Adaptec controllers
-    """
-    # get controllers list
-    def get_raid_controllers_list(self):
-        self.controller_id_pattern = 'Controller [0-9]+:'
-        self.controller_get_info_command = 'arcconf list'
-
-        try:
-            self.raid_controller_info = subprocess.check_output(
-                self.controller_get_info_command,
-                shell=True, universal_newlines=True).splitlines()
-        except subprocess.CalledProcessError:
-            print('Could not get controllers list')
-            self.raid_controllers_list = "NA"
-
-        for line in self.raid_controller_info:
-            if re.match(self.controller_id_pattern, line):
-                self.raid_controllers_list.append(line.split()[1]).rstrip(':')
-        return None
+    Is yet to be implemented
 '''
