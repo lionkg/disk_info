@@ -97,5 +97,3 @@ class BlkDev(object):
 
     def __str__(self):
         return self.name
-
-# drive = BlkDev('sda')
