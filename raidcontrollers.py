@@ -1,7 +1,7 @@
 import subprocess
 import re
 
-from raidarray import RaidArrayMegaRaid
+from raidarray import RaidArrayMegaRaid, RaidArrayAdaptec
 
 
 class RaidControllers(object):
@@ -118,10 +118,10 @@ class RaidControllersAdaptec(RaidControllers):
         for controller_id in self.raid_controllers:
             arrays_list = self.get_controller_arrays(controller_id)
             self.raid_controllers[controller_id] = []
-#            for array_id in arrays_list:
-#                array = RaidArrayAdaptec(controller_id, array_id)
-#                self.raid_controllers[controller_id].append(
-#                    (array_id, array.blk_dev_name, array))
+            for array_id in arrays_list:
+                array = RaidArrayAdaptec(controller_id, array_id)
+                self.raid_controllers[controller_id].append(
+                    (array_id, array.blk_dev_name, array))
 
     # get controllers list
     def get_controllers(self):
