@@ -19,7 +19,7 @@ linux commands used:
 * storcli64 Ver 1.21.06
 * smartctl from smartmontools package
 
-Tested on Ubuntu 18.04.
+Tested on Ubuntu 18.04 and python 3.5.2+
 
 ### This code is purely infomational and does not make any modifications to the system. ###
 
