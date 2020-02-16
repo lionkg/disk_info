@@ -64,8 +64,9 @@ class RaidControllersMegaRaid(RaidControllers):
             return None
 
         for line in self.raid_controller_info:
-            if line.startswith(self.controller_id_pattern):
-                self.raid_controllers[int(line.split()[-1])] = []
+            if line.strip().startswith(self.controller_id_pattern):
+                if int(line.split()[-1]) not in self.raid_controllers:
+                    self.raid_controllers[int(line.split()[-1])] = []
         return None
 
     # get raid arrays for raid controller
@@ -105,7 +106,77 @@ class RaidControllersMegaRaid(RaidControllers):
                     return None
 
 
-'''
 class RaidControllersAdaptec(RaidControllers):
-    Is yet to be implemented
-'''
+    """
+    A class for Adaptec controllers
+    """
+
+    # added population of actual arrays detected on a Adaptec controller
+    def __init__(self):
+        super().__init__()
+        self.raid_vendor = 'Adaptec'
+        for controller_id in self.raid_controllers:
+            arrays_list = self.get_controller_arrays(controller_id)
+            self.raid_controllers[controller_id] = []
+#            for array_id in arrays_list:
+#                array = RaidArrayAdaptec(controller_id, array_id)
+#                self.raid_controllers[controller_id].append(
+#                    (array_id, array.blk_dev_name, array))
+
+    # get controllers list
+    def get_controllers(self):
+        controller_id_pattern = 'Controller [0-9]+:'
+        controller_get_info_command = 'arcconf list'
+
+        try:
+            self.raid_controller_info = subprocess.check_output(
+                controller_get_info_command, shell=True,
+                universal_newlines=True).splitlines()
+        except subprocess.CalledProcessError:
+            self.raid_controllers_list = None
+            return None
+
+        for line in self.raid_controller_info:
+            if re.match(controller_id_pattern, line.strip()):
+                if int(line.split()[1].rstrip(':')) not in \
+                                        self.raid_controllers:
+                    self.raid_controllers[
+                        int(line.split()[1].rstrip(':'))
+                        ] = []
+        return None
+
+    # get raid arrays for raid controller
+    def get_controller_arrays(self, raid_controller_id):
+        arrays_list = []
+        get_arrays_command = \
+            'arcconf getconfig '+str(raid_controller_id)+' LD'
+        arrays = subprocess.check_output(
+            get_arrays_command, shell=True,
+            universal_newlines=True).splitlines()
+        for line in arrays:
+            if line.startswith('Logical Device number'):
+                arrays_list.append(
+                    int(line.split()[-1]))
+        return arrays_list
+
+    # get array coordinates by attribute
+    def fetch_array(self, array_attr_name, array_attr_value):
+        for controller_id in self.raid_controllers:
+            for array in self.raid_controllers[controller_id]:
+                try:
+                    if getattr(array[2], array_attr_name) == \
+                            array_attr_value:
+                        return controller_id, array[0], array[2]
+                except AttributeError:
+                    return None
+
+    # get array's physical devices list
+    def fetch_array_pd_list(self, array_attr_name, array_attr_value):
+        for controller_id in self.raid_controllers:
+            for array in self.raid_controllers[controller_id]:
+                try:
+                    if getattr(array[2], array_attr_name) == \
+                            array_attr_value:
+                        return array[2].pd_list
+                except AttributeError:
+                    return None
