@@ -3,15 +3,15 @@ Module for getting block devices information
 
 ## WARNING: work in progress ##
 
-This is a python module for retriving information on linux blk devices. It is able to detec MegaRaid controllers/arrays with underlying physical devices.
+This is a python module for retriving information on linux blk devices. It is able to detect MegaRaid controllers/arrays with underlying physical devices.
 
 What is implemented
-* Bock device detection - diskdrive.py
-* MegaRaid controllers detecrtion - raidcontrollers.py
+* Block device detection - diskdrive.py
+* MegaRaid controllers detection - raidcontrollers.py
 * MegaRaid arrays detection - raidarray.py
 
 TO-DO
-* Implemet function for getting dlock device stats and errors
+* Implemet function for getting block device stats and errors
 * Implemet classes for Adaptec based raid arrays
 
 linux commands used:
