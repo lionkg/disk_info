@@ -15,71 +15,118 @@ class BlkDev(object):
         self.name = name
         self.array_vendor = array_vendor
         self.id_in_array = id_in_array
-        self.type = self.size_str = self.size_int = None
-        self.model = self.vendor = self.sn = self.unit_id = None
-        self.get_info()
-        if self.type is None:
-            raise 'Could not detect drive type'
-        elif self.type != 'raid_array':
-            self.get_dev_stats()
-            self.get_dev_errors()
+
+        self.dev_type = self.size = self.model = \
+            self.vendor = self.sn = self.unit_id = None
+
+        self.info = self.get_smart_info()
+        self.dev_type = self.get_type()
+
+        if self.dev_type is None:
+            raise ValueError('Could not detect drive type')
 
     def print_info(self):
         print('Block device name is {}'.format(self.name))
-        print('Block device type is {}'.format(self.type))
+        print('Block device type is {}'.format(self.dev_type))
         print('Block device vendor is {}'.format(self.vendor))
         print('Block device model is {}'.format(self.model))
-        print('Block device size is {} bytes'.format(self.size_str))
+        print('Block device size is {} bytes'.format(self.size[0]))
 
     # get all drive info via smartctl
-    def get_smartctl_info(self):
+    def get_smart_info(self):
         if self.array_vendor == 'megaraid':
-            megaraid_member_id = '-d megaraid,'+self.id_in_array
+            cmd = \
+                'smartctl -i -d megaraid,'+self.id_in_array+' /dev/'+self.name
+        elif self.array_vendor == 'adaptec':
+            cmd = 'smartctl -i /dev/'+self.name
         else:
-            megaraid_member_id = ''
+            cmd = 'smartctl -i /dev/'+self.name
         try:
-            self.info = \
-                subprocess.check_output(
-                    'smartctl -i '+megaraid_member_id+' /dev/'+self.name,
-                    shell=True, universal_newlines=True).splitlines()
+            info = \
+                subprocess.check_output(cmd, shell=True,
+                                        universal_newlines=True).splitlines()
         except subprocess.CalledProcessError:
-            self.info = None
-        return None
+            info = None
+            raise subprocess.CalledProcessError(
+                'Could not get S.M.A.R.T. info')
+        return info
+
+    def get_vendor(self):
+        for line in self.info:
+            if line.lower().startswith('vendor:'):
+                vendor = line.split()[-1].lower()
+                break
+        if vendor in sum(BlkDev.raid_card_types.values(), []):
+            for raid_vendor, model in BlkDev.raid_card_types.items():
+                if vendor in model:
+                    vendor = raid_vendor
+                    break
+        if vendor is None:
+            self.get_model()
+            vendor = self.model.split()[-2]
+            self.model = self.model.split()[-1]
+        if vendor is None:
+            raise ValueError('Could not detect drive vendor.')
+        return vendor
+
+    def get_model(self):
+        for line in self.info:
+            if (line.lower().startswith('device model:') or
+                    line.lower().startswith('product:')):
+                model = line.split(':')[-1].lstrip()
+                return model
+        if model is None:
+            raise ValueError('Could not detect drive model.')
+        return model
+
+    def get_type(self):
+        for line in self.info:
+            if 'solid state device' in line.lower():
+                dev_type = 'ssd'
+                return dev_type
+
+        self.vendor = self.get_vendor()
+
+        if self.vendor in BlkDev.raid_card_types.keys():
+            for raid_vendor, model in BlkDev.raid_card_types.items():
+                if self.vendor in model:
+                    self.vendor = raid_vendor
+                    break
+            dev_type = 'raid_array'
+        else:
+            dev_type = 'disk'
+        if dev_type is None:
+            raise ValueError('Could not detect drive type.')
+        return dev_type
 
     # get block device info
-    def get_info(self):
-        self.get_smartctl_info()
-        if self.info is not None:
-            for line in self.info:
-                if line.lower().startswith('vendor:'):
-                    self.vendor = line.split()[-1].lower()
-                elif line.lower().startswith('user capacity:'):
-                    self.size_str = line.split()[2].lower()
-                    self.size_int = self.size_str.replace(',', '')
-                elif 'solid state device' in line.lower():
-                    self.type = 'ssd'
-                elif line.lower().startswith('serial number:'):
-                    self.sn = line.split()[-1].lower()
-                elif line.lower().startswith('logical unit id:'):
-                    self.dev_unit_id = \
-                        line.split()[-1].lower().replace('0x', '', 1)
-                elif (line.lower().startswith('device model:') or
-                      line.lower().startswith('product:')):
-                    self.model = line.split(':')[-1].lstrip('')
-            if self.vendor in sum(BlkDev.raid_card_types.values(), []):
-                for raid_vendor, model in BlkDev.raid_card_types.items():
-                    if self.vendor in model:
-                        self.vendor = raid_vendor
-                        break
-                self.type = 'raid_array'
-            elif self.type is None:
-                self.type = 'disk'
-            if self.vendor is None:
-                self.vendor = self.model.split()[-2]
-                self.model = self.model.split()[-1]
-        else:
-            self.type = None
-        return None
+    def get_size(self):
+        for line in self.info:
+            if line.lower().startswith('user capacity:'):
+                size = []
+                size.append(line.split()[2].lower())
+                size.append(size[0].replace(',', ''))
+                break
+        if size is None:
+            raise ValueError('Could not detect drive size.')
+        return size
+
+    def get_sn(self):
+        for line in self.info:
+            if line.lower().startswith('serial number:'):
+                sn = line.split()[-1].lower()
+                break
+        if sn is None:
+            raise ValueError('Could not detect drive serial number.')
+        return sn
+
+    def get_dev_unit_id(self):
+        for line in self.info:
+            if line.lower().startswith('logical unit id:'):
+                dev_unit_id = \
+                    line.split()[-1].lower().replace('0x', '', 1)
+                break
+        return dev_unit_id
 
     # get drive statistics
     def get_dev_stats(self):
